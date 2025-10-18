@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>High-Roller Texas Hold'em Multiplayer — Side Pots</title>
+<style>
+:root{--bg:#050609;--felt:#061018;--accent:#ffd166;--muted:#8b96a6;--glow:rgba(255,209,102,0.12)}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:#e6eef6}
+.wrap{max-width:1200px;margin:26px auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:20px;margin:0}.sub{color:var(--muted);font-size:13px}
+.table{background:linear-gradient(180deg,#04060a,#071220);border-radius:18px;padding:18px;margin-top:18px;box-shadow:0 20px 60px rgba(2,6,23,.7), inset 0 -6px 30px rgba(0,0,0,0.6)}
+.board{display:grid;grid-template-columns:1fr 360px;gap:18px}
+.play-area{position:relative;background:linear-gradient(180deg,#031018,#061018);padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.02)}
+.felt{height:320px;border-radius:12px;background:linear-gradient(180deg,#05121b,#07202a);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:24px;box-shadow:inset 0 12px 24px rgba(0,0,0,0.6)}
+.table-ring{width:86%;height:220px;background:radial-gradient(circle at 50% 40%, rgba(255,255,255,0.02), rgba(0,0,0,0));border-radius:50%;display:flex;align-items:center;justify-content:center}
+.community{display:flex;gap:12px}.comm-card{width:72px;height:96px;border-radius:8px;background:#081018;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;border:1px solid rgba(255,255,255,0.06);box-shadow:0 8px 20px rgba(0,0,0,0.6);transition:transform .35s ease,opacity .35s ease}
+.pot{margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pot .stack{width:46px;height:46px;border-radius:999px;background:linear-gradient(180deg,#1f1b2a,#0b0810);display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:800;border:2px solid rgba(255,209,102,0.08);box-shadow:0 6px 18px var(--glow);transition:transform .35s ease}
+.players{display:flex;flex-direction:column;gap:10px;margin-top:12px}.player{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.02)}
+.p-left{display:flex;gap:12px;align-items:center}.avatar{width:44px;height:44px;border-radius:999px;background:linear-gradient(180deg,#13202a,#071018);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent);border:1px solid rgba(255,255,255,0.03)}
+.p-info{display:flex;flex-direction:column}.name{font-weight:800}.chips{color:#ffd166;font-weight:800}
+.controls{display:flex;gap:8px;margin-top:12px}.btn{background:var(--accent);color:#061018;padding:10px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:800}.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px}
+.log{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;height:120px;overflow:auto;margin-top:12px;color:var(--muted)}
+.out-banner{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:linear-gradient(180deg,#2b0000,#120004);color:#fff;padding:16px 22px;border-radius:12px;font-weight:900;box-shadow:0 12px 40px rgba(200,30,30,0.24);display:none;z-index:1000}
+@media (max-width:900px){.board{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div>
+<h1>High-Roller Texas Hold'em Multiplayer</h1>
+<div class="sub">Dark high-roller visuals with classic casino card faces. Chips-only, multi-way split pot included.</div>
+</div>
+<div style="display:flex;gap:10px;align-items:center">
+<button id="newBtn" class="btn">New Table</button>
+<button id="exportBtn" class="ghost">Share Link</button>
+</div>
+</header>
+<div class="table">
+<div class="board">
+<div class="play-area">
+<div class="felt">
+<div class="table-ring">
+<div style="display:flex;flex-direction:column;align-items:center">
+<div class="community" id="communityArea"></div>
+<div class="pot" id="potArea"></div>
+</div>
+</div>
+</div>
+<div class="controls" style="justify-content:center">
+<button id="dealBtn" class="btn">Deal / Progress</button>
+<button id="foldBtn" class="ghost">Fold</button>
+<button id="checkBtn" class="ghost">Check / Call</button>
+<button id="raiseBtn" class="btn">Raise</button>
+</div>
+<div class="log" id="log"></div>
+</div>
+<aside style="padding:12px">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div class="muted">Players</div>
+<div class="muted">Blinds: <span id="blindsDisplay">10 / 20</span></div>
+</div>
+<div class="players" id="playersList" style="margin-top:12px"></div>
+<div style="margin-top:12px;display:flex;gap:8px">
+<select id="numPlayersSelect">
+<option value="2">2 players</option>
+<option value="3">3 players</option>
+<option value="4">4 players</option>
+<option value="5">5 players</option>
+<option value="6" selected>6 players</option>
+</select>
+<input id="startChips" value="1000" style="width:100px" />
+</div>
+</aside>
+</div>
+</div>
+</div>
+<div id="outBanner" class="out-banner">OUT OF CHIPS</div>
+<script>
+const socket=new WebSocket('ws://YOUR_SERVER_IP:8080');
+socket.addEventListener('open',()=>console.log('Connected'));
+socket.addEventListener('message',e=>handleRemoteMove(JSON.parse(e.data)));
+function sendMove(move){socket.send(JSON.stringify(move));}
+
+const SUITS=['s','h','d','c'],RANKS=['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
+let state={players:[],community:[],pots:[],phase:'idle',dealer:0,smallBlind:10,bigBlind:20};
+function log(msg){const el=document.getElementById('log');el.innerHTML+=`<div>${msg}</div>`;el.scrollTop=el.scrollHeight;}
+function makeDeck(){const d=[];for(const r of RANKS)for(const s of SUITS)d.push(r+s);return d}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+function cardDisplay(c){const suit=c[1];const suitSym=suit==='s'?'♠':suit==='h'?'♥':suit==='d'?'♦':'♣';return c[0]+suitSym;}
+function newTable(){const n=parseInt(document.getElementById('numPlayersSelect').value)||6;const chips=parseInt(document.getElementById('startChips').value)||1000;state.players=[];state.community=[];state.pots=[];state.phase='idle';for(let i=0;i<n;i++)state.players.push({id:i,name:'Player '+(i+1),chips:chips,hole:[],bet:0,inHand:true,folded:false});renderPlayers();renderCommunity();renderPots();log('New table — '+n+' players');}
+function renderPlayers(){const list=document.getElementById('playersList');list.innerHTML='';state.players.forEach(p=>{const div=document.createElement('div');div.className='player';div.innerHTML=`<div class="p-left"><div class="avatar">${p.name.split(' ').map(x=>x[0]).join('').slice(0,2)}</div><div class="p-info"><div class="name">${p.name}</div><div class="muted">Chips: <span class="chips">${p.chips}</span></div></div></div>`;list.appendChild(div);});}
+function renderCommunity(){const area=document.getElementById('communityArea');area.innerHTML='';state.community.forEach(c=>{const d=document.createElement('div');d.className='comm-card';d.textContent=cardDisplay(c);area.appendChild(d)});renderPots();}
+function renderPots(){const area=document.getElementById('potArea');area.innerHTML='';state.pots.forEach((pot,i)=>{const div=document.createElement('div');div.className='stack';div.textContent=pot.amount;area.appendChild(div);});}
+function calculateSidePots(){let active=state.players.filter(p=>p.inHand&&!p.folded).sort((a,b)=>a.bet-b.bet);let pots=[];while(active.length>0){let minBet=active[0].bet;if(minBet===0)break;let potAmount=0;active.forEach(p=>{potAmount+=Math.min(p.bet,minBet);p.bet-=Math.min(p.bet,minBet)});pots.push({amount:potAmount,eligible:active.map(p=>p.id)});active=active.filter(p=>p.bet>0);}state.pots=pots;renderPots();}
+function distributePots(){// simple demo random winners for each pot
+state.pots.forEach(pot=>{const elig=pot.eligible.filter(id=>state.players[id].inHand&&!state.players[id].folded);if(elig.length>0){const winner=state.players[elig[Math.floor(Math.random()*elig.length)]];winner.chips+=pot.amount;log(`${winner.name} wins side pot ${pot.amount} chips!`)}});state.pots=[];renderPlayers();renderPots();}
+document.getElementById('newBtn').addEventListener('click',()=>newTable());
+document.getElementById('dealBtn').addEventListener('click',()=>{if(state.phase==='idle'){newTable();startHand()}else{progressPhase()}});
+document.getElementById('foldBtn').addEventListener('click',()=>{log('Folded (demo)');sendMove({type:'fold'})});
+document.getElementById('checkBtn').addEventListener('click',()=>{log('Check/Call (demo)');sendMove({type:'check'})});
+document.getElementById('raiseBtn').addEventListener('click',()=>{const a=parseInt(prompt('Raise amount:'))||0;log('Raise '+a+' (demo)');sendMove({type:'raise',amount:a})});
+function handleRemoteMove(data){/* handle remote moves */}
+function startHand(){state.players.forEach(p=>{p.bet=0;p.hole=[makeDeck().pop(),makeDeck().pop()];p.inHand=true;p.folded=false});state.community=[];state.phase='preflop';log('Dealt preflop');renderPlayers();renderCommunity();}
+function progressPhase(){if(state.phase==='preflop'){state.community.push(makeDeck().pop(),makeDeck().pop(),makeDeck().pop());state.phase='flop';log('Flop');renderCommunity();}else if(state.phase==='flop'){state.community.push(makeDeck().pop());state.phase='turn';log('Turn');renderCommunity();}else if(state.phase==='turn'){state.community.push(makeDeck().pop());state.phase='river';log('River');renderCommunity();}else if(state.phase==='river'){state.phase='showdown';calculateSidePots();distributePots();log('Showdown complete');state.phase='idle';}}
+newTable();
+</script>
+</body>
+</html>
